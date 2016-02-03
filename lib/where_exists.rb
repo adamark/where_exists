@@ -2,16 +2,24 @@ require 'active_record'
 
 module WhereExists
   def where_exists(association_name, where_parameters = {})
-    where_exists_or_not_exists(true, association_name, where_parameters)
+    self.where exists_or_not_exists_sql(true, association_name, where_parameters)
   end
 
   def where_not_exists(association_name, where_parameters = {})
-    where_exists_or_not_exists(false, association_name, where_parameters)
+    self.where exists_or_not_exists_sql(false, association_name, where_parameters)
+  end
+
+  def exists_sql(association_name, where_parameters = {})
+    exists_or_not_exists_sql(true, association_name, where_parameters)
+  end
+
+  def not_exists_sql(association_name, where_parameters = {})
+    exists_or_not_exists_sql(false, association_name, where_parameters)
   end
 
   protected
 
-  def where_exists_or_not_exists(does_exist, association_name, where_parameters)
+  def exists_or_not_exists_sql(does_exist, association_name, where_parameters)
     association = self.reflect_on_association(association_name)
 
     unless association
@@ -35,9 +43,9 @@ module WhereExists
 
     #queries.map!{|query| query.select(ActiveRecord::FinderMethods::ONE_AS_ONE).where(where_parameters)}
 
-    queries_sql = queries.map{|query| "EXISTS (" + query.to_sql + ")"}.join(" OR ")
+    queries_sql = queries.map {|query| "EXISTS (" + query.to_sql + ")"}.join(" OR ")
 
-    self.where("#{not_string}(#{queries_sql})")
+    "#{not_string}(#{queries_sql})"
   end
 
   def where_exists_for_belongs_to_query(association, where_parameters)
@@ -107,3 +115,4 @@ end
 class ActiveRecord::Base
   extend WhereExists
 end
+
